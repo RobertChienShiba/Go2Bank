@@ -58,7 +58,7 @@ func NewServer(config util.Config, store db.Store, sessionStore rds.Store) (*Ser
 }
 
 // Start runs the HTTP server on a specific address
-func (server *Server) Start(address string) *http.Server {
+func (server *Server) New(address string) *http.Server {
 
 	return &http.Server{
 		Handler: server.router,

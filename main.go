@@ -81,7 +81,7 @@ func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Co
 		log.Fatal().Err(err).Msg("cannot create server")
 	}
 
-	httpServer := server.Start(config.HTTPServerAddress)
+	httpServer := server.New(config.HTTPServerAddress)
 
 	waitGroup.Go(func() error {
 		log.Info().Msgf("start Gin server at %s", httpServer.Addr)
