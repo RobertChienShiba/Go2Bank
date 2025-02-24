@@ -24,7 +24,7 @@ cur = conn.cursor()
 
 # clear the data in the currencies table
 cur.execute("""
-    TRUNCATE TABLE currencies
+    TRUNCATE TABLE IF EXISTS currencies
 """)
 conn.commit()
 
