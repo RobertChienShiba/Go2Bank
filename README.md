@@ -16,7 +16,7 @@
 - **POST** `/transfers` : create a new transfer between two accounts
 
 ## DB Diagram
-
+![db](https://imgur.com/55u6nUY.png)
 
 ## Tech Stack
 - Gin
