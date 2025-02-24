@@ -15,6 +15,9 @@
 - **GET** `/accounts/` : List all accounts
 - **POST** `/transfers` : create a new transfer between two accounts
 
+## DB Diagram
+
+
 ## Tech Stack
 - Gin
 - Sqlc
