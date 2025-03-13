@@ -34,8 +34,8 @@
 - [x] Secure `Transfers` endpoints with time-based OTP token
 - [x] Implement an asynchronous worker to deliver emails
 - [x] Build a robust API rate limiting middleware with a sliding window logging algorithm
-- [x] Store Refresh Tokens in **HttpOnly cookies** and **Redis** for better user experience and instant revocation.
-- [ ] Improve Testing coverage (up to 80%)
+- [x] Store Refresh Tokens in **HttpOnly cookies** and **Redis** for better user experience and instant revocation
+- [ ] Improve Testing coverage (up to at least 80%)
 - [ ] Intergate with gRPC API
 - [ ] Use SQS as the message queue for OTP requests
 - [ ] Create a Lambda function to listen to SQS and trigger AWS SES to complete OTP email delivery
