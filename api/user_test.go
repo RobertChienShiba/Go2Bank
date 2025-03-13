@@ -17,6 +17,7 @@ import (
 	mocksession "github.com/RobertChienShiba/simplebank/redis/mock"
 	"github.com/RobertChienShiba/simplebank/token"
 	"github.com/RobertChienShiba/simplebank/util"
+	mockwk "github.com/RobertChienShiba/simplebank/worker/mock"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -167,11 +168,15 @@ func TestCreateUserAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)
@@ -309,11 +314,15 @@ func TestGetUserAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			url := "/users/me"
@@ -443,11 +452,15 @@ func TestLoginUserAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON
@@ -643,11 +656,15 @@ func TestUpdateUserAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			// Marshal body data to JSON

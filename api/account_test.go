@@ -16,6 +16,7 @@ import (
 	mocksession "github.com/RobertChienShiba/simplebank/redis/mock"
 	"github.com/RobertChienShiba/simplebank/token"
 	"github.com/RobertChienShiba/simplebank/util"
+	mockwk "github.com/RobertChienShiba/simplebank/worker/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -138,11 +139,15 @@ func TestGetAccountAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			url := fmt.Sprintf("/accounts/%d", tc.accountID)
@@ -278,11 +283,15 @@ func TestCreateAccountAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			data, err := json.Marshal(tc.body)
@@ -436,11 +445,15 @@ func TestListAccountAPI(t *testing.T) {
 			ctrlSession := gomock.NewController(t)
 			defer ctrlSession.Finish()
 
+			ctrlwk := gomock.NewController(t)
+			defer ctrlwk.Finish()
+
 			store := mockdb.NewMockStore(ctrl)
 			session := mocksession.NewMockStore(ctrlSession)
+			worker := mockwk.NewMockTaskDistributor(ctrlwk)
 			tc.buildStubs(store, session)
 
-			server := newTestServer(t, store, session)
+			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
 			url := "/accounts"

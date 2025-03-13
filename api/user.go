@@ -2,7 +2,6 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -178,10 +177,10 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("sid", sID, 3600*24, "/", "", false, true)
 
-	err1 := server.sessionStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
-	err2 := server.sessionStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
-	err3 := server.sessionStore.Set("sid:"+sID+":ip", ctx.ClientIP(), server.config.RefreshTokenDuration)
-	fmt.Println("ip", ctx.ClientIP())
+	err1 := server.kvStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
+	err2 := server.kvStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
+	err3 := server.kvStore.Set("sid:"+sID+":ip", ctx.ClientIP(), server.config.RefreshTokenDuration)
+
 	if err1 != nil || err2 != nil || err3 != nil {
 		err := errors.New("failed to set session in redis when logging in")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -204,9 +203,9 @@ func (server *Server) logoutUser(ctx *gin.Context) {
 		return
 	}
 
-	err1 := server.sessionStore.Del("sid:" + sID)
-	err2 := server.sessionStore.Del("sid:" + sID + ":user_agent")
-	err3 := server.sessionStore.Del("sid:" + sID + ":ip")
+	err1 := server.kvStore.Del("sid:" + sID)
+	err2 := server.kvStore.Del("sid:" + sID + ":user_agent")
+	err3 := server.kvStore.Del("sid:" + sID + ":ip")
 	if err1 != nil || err2 != nil || err3 != nil {
 		err := errors.New("failed to delete session in redis when logging out")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

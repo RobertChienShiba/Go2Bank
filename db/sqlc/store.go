@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -68,6 +69,16 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
+		if fromAccount, err := q.GetAccount(ctx, arg.FromAccountID); err != nil || fromAccount.Balance < arg.FromAmount {
+			if err != nil {
+				return err
+			}
+
+			if fromAccount.Balance < arg.FromAmount {
+				return errors.New("balance is insufficient")
+			}
+		}
+
 		var err error
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
 			FromAccountID: arg.FromAccountID,

@@ -7,8 +7,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY wait-for-data.sh .
-COPY crawl.py .
-COPY currency.txt .
 COPY start.sh .
+COPY currency.txt .
+COPY crawl.py .
 
 CMD ["sh", "./start.sh"]

@@ -15,6 +15,11 @@ type Config struct {
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	RedisURL             string        `mapstructure:"REDIS_URL"`
 	MigrationURL         string        `mapstructure:"MIGRATION_URL"`
+	EmailSenderName      string        `mapstructure:"EMAIL_SENDER_NAME"`
+	EmailSenderAddress   string        `mapstructure:"EMAIL_SENDER_ADDRESS"`
+	EmailSenderPassword  string        `mapstructure:"EMAIL_SENDER_PASSWORD"`
+	APILimitBound        int64         `mapstructure:"API_LIMIT_BOUND"`
+	APILimitDuration     time.Duration `mapstructure:"API_LIMIT_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

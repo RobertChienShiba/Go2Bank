@@ -3,34 +3,38 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	db "github.com/RobertChienShiba/simplebank/db/sqlc"
 	rds "github.com/RobertChienShiba/simplebank/redis"
 	"github.com/RobertChienShiba/simplebank/token"
 	"github.com/RobertChienShiba/simplebank/util"
+	"github.com/RobertChienShiba/simplebank/worker"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 )
 
 type Server struct {
-	config       util.Config
-	tokenMaker   token.Maker
-	store        db.Store
-	sessionStore rds.Store
-	router       *gin.Engine
+	config          util.Config
+	tokenMaker      token.Maker
+	store           db.Store
+	kvStore         rds.Store
+	taskDistributor worker.TaskDistributor
+	router          *gin.Engine
 }
 
-func NewServer(config util.Config, store db.Store, sessionStore rds.Store) (*Server, error) {
+func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistributor worker.TaskDistributor) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker %w", err)
 	}
 	server := &Server{
-		config:       config,
-		store:        store,
-		sessionStore: sessionStore,
-		tokenMaker:   tokenMaker,
+		config:          config,
+		store:           store,
+		kvStore:         kvStore,
+		taskDistributor: taskDistributor,
+		tokenMaker:      tokenMaker,
 	}
 	router := gin.Default()
 
@@ -51,7 +55,28 @@ func NewServer(config util.Config, store db.Store, sessionStore rds.Store) (*Ser
 	authRoutes.POST("/accounts", server.createAccount)
 	authRoutes.GET("/accounts/:id", server.getAccount)
 	authRoutes.GET("/accounts", server.listAccounts)
-	authRoutes.POST("/transfers", server.createTransfer)
+
+	authRoutes.GET("/transfers/sendOTP",
+		rateLimitMiddleware("sendOTP", kvStore, config.APILimitBound, config.APILimitDuration),
+		server.sendOTP,
+	)
+
+	authRoutes.POST("/transfers",
+		rateLimitMiddleware("verifyOTP", kvStore, config.APILimitBound, config.APILimitDuration),
+		verifyOTPMiddleware(kvStore, config.APILimitDuration),
+		server.createTransfer,
+	)
+
+	router.GET("/stress_test",
+		func(ctx *gin.Context) {
+			testPayload := &token.Payload{
+				Username: "test",
+			}
+			ctx.Set("authorization_payload", testPayload)
+			ctx.Next()
+		},
+		rateLimitMiddleware("test", kvStore, int64(1000), 30*time.Second),
+	)
 
 	server.router = router
 	return server, nil
@@ -64,7 +89,6 @@ func (server *Server) New(address string) *http.Server {
 		Handler: server.router,
 		Addr:    address,
 	}
-
 	// return server.router.Run(address)
 }
 

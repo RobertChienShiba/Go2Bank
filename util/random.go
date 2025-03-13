@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base32"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
@@ -39,7 +40,7 @@ func RandomOwner() string {
 
 // RandomMoney generates a random amount of money
 func RandomMoney() int64 {
-	return RandomInt(0, 1000)
+	return RandomInt(5000, 10000)
 }
 
 // RandomCurrency generates a random currency code
@@ -58,4 +59,12 @@ func RandomID() string {
 	bytes := make([]byte, 16)
 	_, _ = rand.Read(bytes)
 	return hex.EncodeToString(bytes)
+}
+
+func RandomBase32Secret(length int) string {
+	bytes := make([]byte, length)
+	_, _ = rand.Read(bytes)
+
+	secret := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(bytes)
+	return secret
 }

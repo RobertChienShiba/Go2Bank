@@ -24,20 +24,20 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	ex, err := server.sessionStore.Exists("sid:" + sID)
+	ex, err := server.kvStore.Exists("sid:" + sID)
 	if err != nil || ex <= 0 {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("refresh token has been expired")))
 		return
 	}
 
-	username, err := server.sessionStore.Get("sid:" + sID)
+	username, err := server.kvStore.Get("sid:" + sID)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
 		return
 	}
 
-	storedUserAgent, _ := server.sessionStore.Get("sid:" + sID + ":user_agent")
-	storedIP, _ := server.sessionStore.Get("sid:" + sID + ":ip")
+	storedUserAgent, _ := server.kvStore.Get("sid:" + sID + ":user_agent")
+	storedIP, _ := server.kvStore.Get("sid:" + sID + ":ip")
 
 	currentUserAgent := ctx.GetHeader("User-Agent")
 	currentIP := ctx.ClientIP()
@@ -76,9 +76,9 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	err1 := server.sessionStore.Del("sid:" + sID)
-	err2 := server.sessionStore.Del("sid:" + sID + ":user_agent")
-	err3 := server.sessionStore.Del("sid:" + sID + ":ip")
+	err1 := server.kvStore.Del("sid:" + sID)
+	err2 := server.kvStore.Del("sid:" + sID + ":user_agent")
+	err3 := server.kvStore.Del("sid:" + sID + ":ip")
 	if err1 != nil || err2 != nil || err3 != nil {
 		err := errors.New("failed to delete session in redis when renewing access token")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -89,9 +89,9 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 	ctx.SetSameSite(http.SameSiteLaxMode)
 	ctx.SetCookie("sid", sID, 3600*24, "/", "", false, true)
 
-	err1 = server.sessionStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
-	err2 = server.sessionStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
-	err3 = server.sessionStore.Set("sid:"+sID+":ip", ctx.ClientIP(), server.config.RefreshTokenDuration)
+	err1 = server.kvStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
+	err2 = server.kvStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
+	err3 = server.kvStore.Set("sid:"+sID+":ip", ctx.ClientIP(), server.config.RefreshTokenDuration)
 	if err1 != nil || err2 != nil || err3 != nil {
 		err := errors.New("failed to set session in redis when renewing access token")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

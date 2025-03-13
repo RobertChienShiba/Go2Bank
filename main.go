@@ -11,8 +11,11 @@ import (
 
 	"github.com/RobertChienShiba/simplebank/api"
 	db "github.com/RobertChienShiba/simplebank/db/sqlc"
+	"github.com/RobertChienShiba/simplebank/mail"
 	rds "github.com/RobertChienShiba/simplebank/redis"
 	"github.com/RobertChienShiba/simplebank/util"
+	"github.com/RobertChienShiba/simplebank/worker"
+	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -47,14 +50,23 @@ func main() {
 
 	store := db.NewStore(connPool)
 
-	opts, _ := redis.ParseURL(config.RedisURL)
+	connOpts, _ := redis.ParseURL(config.RedisURL)
+	connOpts.DB = 0
 
-	redisConn := redis.NewClient(opts)
-	sessionStore := rds.NewSessionStore(redisConn)
+	redisConn := redis.NewClient(connOpts)
+	kvStore := rds.NewRedisStore(redisConn)
 
 	waitGroup, ctx := errgroup.WithContext(ctx)
 
-	runGinServer(ctx, waitGroup, config, store, sessionStore)
+	redisOpt := asynq.RedisClientOpt{
+		Addr: connOpts.Addr,
+		DB:   1,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
+	runTaskProcessor(ctx, waitGroup, config, redisOpt, store, kvStore)
+	runGinServer(ctx, waitGroup, config, store, kvStore, taskDistributor)
 
 	err = waitGroup.Wait()
 	if err != nil {
@@ -75,8 +87,42 @@ func runDBMigration(migrationURL string, dbSource string) {
 	log.Info().Msg("db migrated successfully")
 }
 
-func runGinServer(ctx context.Context, waitGroup *errgroup.Group, config util.Config, store db.Store, sessionStore rds.Store) {
-	server, err := api.NewServer(config, store, sessionStore)
+func runTaskProcessor(
+	ctx context.Context,
+	waitGroup *errgroup.Group,
+	config util.Config,
+	redisOpt asynq.RedisClientOpt,
+	store db.Store,
+	kvStore rds.Store,
+) {
+	mailer := mail.NewGmailSender(config.EmailSenderName, config.EmailSenderAddress, config.EmailSenderPassword)
+	taskProcessor := worker.NewRedisTaskProcessor(config, redisOpt, store, kvStore, mailer)
+
+	log.Info().Msg("start task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+
+	waitGroup.Go(func() error {
+		<-ctx.Done()
+		log.Info().Msg("graceful shutdown task processor")
+
+		taskProcessor.Shutdown()
+		log.Info().Msg("task processor is stopped")
+
+		return nil
+	})
+}
+
+func runGinServer(ctx context.Context,
+	waitGroup *errgroup.Group,
+	config util.Config,
+	store db.Store,
+	kvStore rds.Store,
+	taskDistributor worker.TaskDistributor,
+) {
+	server, err := api.NewServer(config, store, kvStore, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create server")
 	}

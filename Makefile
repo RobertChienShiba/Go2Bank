@@ -44,7 +44,8 @@ server:
 
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/RobertChienShiba/simplebank/db/sqlc Store
-	mockgen -package mocksession -destination redis/mock/session.go github.com/RobertChienShiba/simplebank/redis Store
+	mockgen -package mockss -destination redis/mock/session.go github.com/RobertChienShiba/simplebank/redis Store
+	mockgen -package mockwk -destination worker/mock/distributor.go github.com/RobertChienShiba/simplebank/worker TaskDistributor
 
 redis:
 	docker run --name redis --network bank-network -p 6380:6379 -d redis:7-alpine

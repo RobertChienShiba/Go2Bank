@@ -21,16 +21,33 @@
 ## Tech Stack
 - Gin
 - Sqlc
-- Postgres
+- PostgreSQL
 - Redis
-- Paseto token
-- Github action
+- Paseto Tokens
+- Github Actions
 - Docker
-- Crontab
+- CronJob
+- Time-based OTP
+- API rate limited (Load testing through [vegeta](https://github.com/tsenart/vegeta))
 
 ## TODO
-- [ ] Improve Testing coverage
-- [ ] Build deposit and withdraw endpoints with OTP token
-- [ ] Intergate with GRPC
+- [x] Secure `Transfers` endpoints with time-based OTP token
+- [x] Implement an asynchronous worker to deliver emails
+- [x] Build a robust API rate limiting middleware with a sliding window logging algorithm
+- [x] Store Refresh Tokens in **HttpOnly cookies** and **Redis** for better user experience and instant revocation.
+- [ ] Improve Testing coverage (up to 80%)
+- [ ] Intergate with gRPC API
+- [ ] Use SQS as the message queue for OTP requests
+- [ ] Create a Lambda function to listen to SQS and trigger AWS SES to complete OTP email delivery
 
-
+## Reference
+- [TechSchool](https://www.youtube.com/playlist?list=PLy_6D98if3ULEtXtNSY_2qN21VCKgoQAE)
+- [golang-migrate](https://github.com/golang-migrate/migrate/tree/master?tab=readme-ov-file)
+- [Gin](https://github.com/gin-gonic/gin/blob/master/docs/doc.md#model-binding-and-validation)
+- [Requests Validator](https://github.com/go-playground/validator?tab=readme-ov-file)
+- [Sqlc](https://docs.sqlc.dev/en/latest/reference/config.html#gen)
+- [golang-mock](https://github.com/golang/mock)
+- [go-redis](https://github.com/redis/go-redis)
+- [cronjob in alpine image](https://stackoverflow.com/questions/37458287/how-to-run-a-cron-job-inside-a-docker-container)
+- [Golang One-Time Password](https://github.com/xlzd/gotp)
+- [Rate limiting algorithm](https://medium.com/@m-elbably/rate-limiting-the-sliding-window-algorithm-daa1d91e6196)
