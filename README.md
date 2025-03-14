@@ -6,13 +6,19 @@
 - **GET** `/users/renew_access` : Renew your access token
 - **GET** `/users/logout` : Logout and redirect to home page 
 
-⚠️ Following API Endpoints will go through Paseto Authentication Middleware and some will go through RBAC Authorization
+> [!NOTE] 
+> Following API Endpoints will be passed through Paseto Authentication Middleware and `/users/update` endpoint will be passed through RBAC Authorization
+
 - **PATCH** `/users/update` : Update user information
 - **GET** `/users/me` : Get a user information
 - **GET** `/users/renew_access` : Renew your access token
 - **POST** `/accounts` : create a new account by a user
 - **GET** `/accounts/:id` : Get a account information
 - **GET** `/accounts/` : List all accounts
+
+>[!NOTE]
+> The prefix of `/transfers` endpoints will be passed through Rate Limiting Middleware
+- **GET** `/transfers/sendOTP`: Enqueue OTP verification task into message queue
 - **POST** `/transfers` : create a new transfer between two accounts
 
 ## DB Diagram
@@ -31,14 +37,14 @@
 - API rate limited (Load testing through [vegeta](https://github.com/tsenart/vegeta))
 
 ## TODO
-- [x] Secure `Transfers` endpoints with time-based OTP token
+- [x] Secure `Transfers` endpoints with time-based OTP
 - [x] Implement an asynchronous worker to deliver emails
 - [x] Build a robust API rate limiting middleware with a sliding window logging algorithm
 - [x] Store Refresh Tokens in **HttpOnly cookies** and **Redis** for better user experience and instant revocation
 - [ ] Improve Testing coverage (up to at least 80%)
 - [ ] Intergate with gRPC API
 - [ ] Use SQS as the message queue for OTP requests
-- [ ] Create a Lambda function to listen to SQS and trigger AWS SES to complete OTP email delivery
+- [ ] Create a Lambda function to listen to SQS and trigger SES to complete OTP email delivery
 
 ## Reference
 - [TechSchool](https://www.youtube.com/playlist?list=PLy_6D98if3ULEtXtNSY_2qN21VCKgoQAE)
@@ -51,3 +57,4 @@
 - [cronjob in alpine image](https://stackoverflow.com/questions/37458287/how-to-run-a-cron-job-inside-a-docker-container)
 - [Golang One-Time Password](https://github.com/xlzd/gotp)
 - [Rate limiting algorithm](https://medium.com/@m-elbably/rate-limiting-the-sliding-window-algorithm-daa1d91e6196)
+

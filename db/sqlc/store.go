@@ -69,14 +69,8 @@ func (store *SQLStore) TransferTx(ctx context.Context, arg TransferTxParams) (Tr
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
-		if fromAccount, err := q.GetAccount(ctx, arg.FromAccountID); err != nil || fromAccount.Balance < arg.FromAmount {
-			if err != nil {
-				return err
-			}
-
-			if fromAccount.Balance < arg.FromAmount {
-				return errors.New("balance is insufficient")
-			}
+		if fromAccount, _ := q.GetAccount(ctx, arg.FromAccountID); fromAccount.Balance < arg.FromAmount {
+			return errors.New("your account balance is insufficient")
 		}
 
 		var err error
