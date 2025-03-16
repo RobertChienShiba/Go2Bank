@@ -19,7 +19,7 @@ INSERT INTO users (
   email
 ) VALUES (
   $1, $2, $3, $4
-) RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role
+) RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role, provider
 `
 
 type CreateUserParams struct {
@@ -45,12 +45,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.Role,
+		&i.Provider,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role FROM users
+SELECT username, hashed_password, full_name, email, password_changed_at, created_at, role, provider FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -65,6 +66,7 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.Role,
+		&i.Provider,
 	)
 	return i, err
 }
@@ -78,7 +80,7 @@ SET
   email = COALESCE($4, email)
 WHERE
   username = $5
-RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role, provider
 `
 
 type UpdateUserParams struct {
@@ -106,6 +108,55 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
 		&i.Role,
+		&i.Provider,
+	)
+	return i, err
+}
+
+const upsertUser = `-- name: UpsertUser :one
+INSERT INTO users (
+  username,
+  hashed_password,
+  full_name,
+  email,
+  provider
+) VALUES (
+  $1, $2, $3, $4, $5
+) ON CONFLICT (username)
+DO UPDATE 
+SET 
+  email = EXCLUDED.email, 
+  full_name = EXCLUDED.full_name,
+  hashed_password = EXCLUDED.hashed_password
+RETURNING username, hashed_password, full_name, email, password_changed_at, created_at, role, provider
+`
+
+type UpsertUserParams struct {
+	Username       string `json:"username"`
+	HashedPassword string `json:"hashed_password"`
+	FullName       string `json:"full_name"`
+	Email          string `json:"email"`
+	Provider       string `json:"provider"`
+}
+
+func (q *Queries) UpsertUser(ctx context.Context, arg UpsertUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, upsertUser,
+		arg.Username,
+		arg.HashedPassword,
+		arg.FullName,
+		arg.Email,
+		arg.Provider,
+	)
+	var i User
+	err := row.Scan(
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.Email,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.Role,
+		&i.Provider,
 	)
 	return i, err
 }

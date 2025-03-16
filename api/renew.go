@@ -2,19 +2,17 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"time"
 
 	db "github.com/RobertChienShiba/simplebank/db/sqlc"
 	"github.com/RobertChienShiba/simplebank/util"
 	"github.com/gin-gonic/gin"
 )
 
-type renewAccessTokenResponse struct {
-	AccessToken          string    `json:"access_token"`
-	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
-}
+// type renewAccessTokenResponse struct {
+// 	AccessToken          string    `json:"access_token"`
+// 	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
+// }
 
 func (server *Server) renewAccessToken(ctx *gin.Context) {
 
@@ -41,8 +39,8 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 
 	currentUserAgent := ctx.GetHeader("User-Agent")
 	currentIP := ctx.ClientIP()
-	fmt.Println("current_ip", currentIP)
-	fmt.Println("store_ip", storedIP)
+	// fmt.Println("current_ip", currentIP)
+	// fmt.Println("store_ip", storedIP)
 
 	if storedUserAgent != currentUserAgent {
 		err := errors.New("mismatched user agent")
@@ -66,7 +64,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
+	accessToken, _, err := server.tokenMaker.CreateToken(
 		user.Username,
 		user.Role,
 		server.config.AccessTokenDuration,
@@ -87,7 +85,7 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 
 	sID = util.RandomID()
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("sid", sID, 3600*24, "/", "", false, true)
+	ctx.SetCookie("sid", sID, int(server.config.RefreshTokenDuration.Seconds()), "/", "", false, true)
 
 	err1 = server.kvStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
 	err2 = server.kvStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
@@ -98,9 +96,12 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		return
 	}
 
-	rsp := renewAccessTokenResponse{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: accessPayload.ExpiredAt,
-	}
-	ctx.JSON(http.StatusOK, rsp)
+	// rsp := renewAccessTokenResponse{
+	// 	AccessToken:          accessToken,
+	// 	AccessTokenExpiresAt: accessPayload.ExpiredAt,
+	// }
+
+	ctx.SetCookie("access_token", accessToken, int(server.config.AccessTokenDuration.Seconds()), "/", "", false, true)
+
+	ctx.JSON(http.StatusOK, gin.H{"status": "success"})
 }

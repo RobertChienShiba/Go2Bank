@@ -95,7 +95,7 @@ func TestSendOTP(t *testing.T) {
 
 			server := newTestServer(t, nil, kvStore, distributor)
 
-			url := "/transfers/sendOTP"
+			url := "/api/auth/transfers/sendOTP"
 			recorder := httptest.NewRecorder()
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)

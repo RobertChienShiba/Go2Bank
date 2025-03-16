@@ -22,3 +22,20 @@ SET
 WHERE
   username = sqlc.arg(username)
 RETURNING *;
+
+-- name: UpsertUser :one
+INSERT INTO users (
+  username,
+  hashed_password,
+  full_name,
+  email,
+  provider
+) VALUES (
+  $1, $2, $3, $4, $5
+) ON CONFLICT (username)
+DO UPDATE 
+SET 
+  email = EXCLUDED.email, 
+  full_name = EXCLUDED.full_name,
+  hashed_password = EXCLUDED.hashed_password
+RETURNING *;

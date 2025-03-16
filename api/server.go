@@ -10,6 +10,7 @@ import (
 	"github.com/RobertChienShiba/simplebank/token"
 	"github.com/RobertChienShiba/simplebank/util"
 	"github.com/RobertChienShiba/simplebank/worker"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -38,16 +39,47 @@ func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistri
 	}
 	router := gin.Default()
 
+	// fmt.Printf("%#v, %d", server.config.AllowedOrigins, len(server.config.AllowedOrigins))
+
+	router.Use(cors.New(cors.Config{
+		AllowOrigins: server.config.AllowedOrigins,
+		AllowMethods: []string{
+			http.MethodHead,
+			http.MethodOptions,
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+		},
+		AllowHeaders: []string{
+			"Content-Type",
+			"Authorization",
+			"X-CSRF-Token",
+		},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", validCurrency)
 	}
 
-	router.POST("/users", server.createUser)
-	router.POST("/users/login", server.loginUser)
-	router.GET("/tokens/renew_access", server.renewAccessToken)
-	router.GET("/users/logout", server.logoutUser)
+	apiRoutes := router.Group("/api")
+	apiRoutes.POST("/users", server.createUser)
+	apiRoutes.POST("/users/login", server.loginUser)
+	apiRoutes.GET("/tokens/renew_access", server.renewAccessToken)
+	apiRoutes.GET("/users/logout", server.logoutUser)
 
-	authRoutes := router.Group("/").Use(authMiddleware(tokenMaker))
+	authRoutes := apiRoutes.Group("/auth").Use(
+		csrfVerifyMiddleware(),
+		csrfTokenMiddleware(),
+		authMiddleware(tokenMaker),
+	)
+
+	authRoutes.GET("/csrf_token", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"message": "fetch csrf token successfully"})
+	})
 
 	authRoutes.PATCH("/users/update", server.updateUser)
 	authRoutes.GET("/users/me", server.getUser)
@@ -67,7 +99,7 @@ func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistri
 		server.createTransfer,
 	)
 
-	router.GET("/stress_test",
+	apiRoutes.GET("/stress_test",
 		func(ctx *gin.Context) {
 			testPayload := &token.Payload{
 				Username: "test",
@@ -77,6 +109,9 @@ func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistri
 		},
 		rateLimitMiddleware("test", kvStore, int64(1000), 30*time.Second),
 	)
+
+	apiRoutes.GET("/oauth/google", server.googleOAuth)
+	apiRoutes.GET("/test/oauth/google", server.testGoogleOAuth)
 
 	server.router = router
 	return server, nil

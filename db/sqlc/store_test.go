@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -75,7 +74,7 @@ func TestTransferTx(t *testing.T) {
 		require.Equal(t, account2.ID, toAccount.ID)
 
 		// Check the account balances
-		fmt.Println("From Account Balance:", fromAccount.Balance, "To Account Balance:", toAccount.Balance)
+		// fmt.Println("From Account Balance:", fromAccount.Balance, "To Account Balance:", toAccount.Balance)
 
 		require.Equal(t, account1.Balance-int64(i+1)*amount, fromAccount.Balance)
 		require.Equal(t, account2.Balance+int64(i+1)*amount, toAccount.Balance)

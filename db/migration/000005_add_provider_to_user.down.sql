@@ -1,0 +1,1 @@
+ALTER TABLE "users" DROP COLUMN  "provider" varchar NOT NULL DEFAULT 'local'

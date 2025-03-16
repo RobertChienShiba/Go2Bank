@@ -153,7 +153,7 @@ func TestCreateUserAPI(t *testing.T) {
 					Return(db.User{}, db.ErrUniqueViolation)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusForbidden, recorder.Code)
+				require.Equal(t, http.StatusConflict, recorder.Code)
 			},
 		},
 	}
@@ -182,7 +182,7 @@ func TestCreateUserAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users"
+			url := "/api/users"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -325,7 +325,7 @@ func TestGetUserAPI(t *testing.T) {
 			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
-			url := "/users/me"
+			url := "/api/auth/users/me"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -467,7 +467,7 @@ func TestLoginUserAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users/login"
+			url := "/api/users/login"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -490,7 +490,7 @@ func TestUpdateUserAPI(t *testing.T) {
 		name          string
 		body          UpdateUserRequest
 		buildStubs    func(store *mockdb.MockStore, session *mocksession.MockStore)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker)
 		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
 		{
@@ -524,8 +524,10 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(1).
 					Return(updatedUser, nil)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -562,8 +564,10 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(1).
 					Return(updatedUser, nil)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, banker.Username, banker.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, banker.Username, banker.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
@@ -581,8 +585,10 @@ func TestUpdateUserAPI(t *testing.T) {
 					UpdateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, other.Username, other.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, other.Username, other.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -600,8 +606,10 @@ func TestUpdateUserAPI(t *testing.T) {
 					UpdateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, other.Username, "invalid_role", time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, other.Username, "invalid_role", time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
@@ -619,8 +627,10 @@ func TestUpdateUserAPI(t *testing.T) {
 					UpdateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, -time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, -time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -638,7 +648,9 @@ func TestUpdateUserAPI(t *testing.T) {
 					UpdateUser(gomock.Any(), gomock.Any()).
 					Times(0)
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
@@ -671,11 +683,11 @@ func TestUpdateUserAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/users/update"
+			url := "/api/auth/users/update"
 			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request, server.router, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})

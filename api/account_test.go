@@ -17,6 +17,7 @@ import (
 	"github.com/RobertChienShiba/simplebank/token"
 	"github.com/RobertChienShiba/simplebank/util"
 	mockwk "github.com/RobertChienShiba/simplebank/worker/mock"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
@@ -30,13 +31,13 @@ func TestGetAccountAPI(t *testing.T) {
 		name          string
 		accountID     int64
 		buildStubs    func(store *mockdb.MockStore, session *mocksession.MockStore)
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker)
 		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
 		{
 			name:      "OK",
 			accountID: account.ID,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -53,7 +54,7 @@ func TestGetAccountAPI(t *testing.T) {
 		{
 			name:      "UnauthorizedUser",
 			accountID: account.ID,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, "unauthorized_user", util.DepositorRole, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -69,7 +70,9 @@ func TestGetAccountAPI(t *testing.T) {
 		{
 			name:      "NoAuthorization",
 			accountID: account.ID,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -83,7 +86,7 @@ func TestGetAccountAPI(t *testing.T) {
 		{
 			name:      "NotFound",
 			accountID: account.ID,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -99,7 +102,7 @@ func TestGetAccountAPI(t *testing.T) {
 		{
 			name:      "InternalError",
 			accountID: account.ID,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -115,7 +118,7 @@ func TestGetAccountAPI(t *testing.T) {
 		{
 			name:      "InvalidID",
 			accountID: 0,
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -150,11 +153,11 @@ func TestGetAccountAPI(t *testing.T) {
 			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
-			url := fmt.Sprintf("/accounts/%d", tc.accountID)
+			url := fmt.Sprintf("/api/auth/accounts/%d", tc.accountID)
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request, server.router, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -169,7 +172,7 @@ func TestCreateAccountAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		body          createAccountRequest
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore, session *mocksession.MockStore)
 		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
@@ -178,8 +181,10 @@ func TestCreateAccountAPI(t *testing.T) {
 			body: createAccountRequest{
 				Currency: account.Currency,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				arg := db.CreateAccountParams{
@@ -202,7 +207,9 @@ func TestCreateAccountAPI(t *testing.T) {
 			body: createAccountRequest{
 				Currency: account.Currency,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -218,8 +225,10 @@ func TestCreateAccountAPI(t *testing.T) {
 			body: createAccountRequest{
 				Currency: account.Currency,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				arg := db.CreateAccountParams{
@@ -241,8 +250,10 @@ func TestCreateAccountAPI(t *testing.T) {
 			body: createAccountRequest{
 				Currency: "XYZ",
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -258,8 +269,10 @@ func TestCreateAccountAPI(t *testing.T) {
 			body: createAccountRequest{
 				Currency: account.Currency,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -268,7 +281,7 @@ func TestCreateAccountAPI(t *testing.T) {
 					Return(db.Account{}, db.ErrForeignKeyViolation)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				require.Equal(t, http.StatusForbidden, recorder.Code)
+				require.Equal(t, http.StatusConflict, recorder.Code)
 			},
 		},
 	}
@@ -297,11 +310,11 @@ func TestCreateAccountAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/accounts"
+			url := "/api/auth/accounts"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request, server.router, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
@@ -327,7 +340,7 @@ func TestListAccountAPI(t *testing.T) {
 	testCases := []struct {
 		name          string
 		query         Query
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore, session *mocksession.MockStore)
 		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
@@ -337,7 +350,7 @@ func TestListAccountAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: n,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -362,7 +375,7 @@ func TestListAccountAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: n,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -379,7 +392,7 @@ func TestListAccountAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: n,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -403,7 +416,7 @@ func TestListAccountAPI(t *testing.T) {
 				pageID:   1,
 				pageSize: 100,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -421,7 +434,7 @@ func TestListAccountAPI(t *testing.T) {
 				pageID:   0,
 				pageSize: n,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
 				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -456,7 +469,7 @@ func TestListAccountAPI(t *testing.T) {
 			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
-			url := "/accounts"
+			url := "/api/auth/accounts"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 
@@ -465,7 +478,7 @@ func TestListAccountAPI(t *testing.T) {
 			q.Add("page_size", fmt.Sprintf("%d", tc.query.pageSize))
 			request.URL.RawQuery = q.Encode()
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request, server.router, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})

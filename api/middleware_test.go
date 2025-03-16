@@ -20,6 +20,31 @@ import (
 	"github.com/xlzd/gotp"
 )
 
+func addCSRFToken(
+	t *testing.T,
+	csrfReq *http.Request,
+	apiReq *http.Request,
+	router *gin.Engine,
+) {
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, csrfReq)
+
+	// require.Equal(t, http.StatusOK, w.Code)
+
+	token := w.Header().Get("X-CSRF-Token")
+	require.NotEmpty(t, token)
+
+	apiReq.Header.Set("X-CSRF-Token", token)
+	apiReq.Header.Set(authorizationHeaderKey, csrfReq.Header.Get(authorizationHeaderKey))
+
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == "_gorilla_csrf" {
+			apiReq.AddCookie(cookie)
+			return
+		}
+	}
+}
+
 func addAuthorization(
 	t *testing.T,
 	request *http.Request,
@@ -190,7 +215,7 @@ func TestRateLimitMiddleware(t *testing.T) {
 			tc.buildStubs(kvStore)
 
 			server := newTestServer(t, nil, kvStore, nil)
-			rateLimitPath := "/rate_limit"
+			rateLimitPath := "/middleware/test/rate_limit"
 			server.router.GET(
 				rateLimitPath,
 				authMiddleware(server.tokenMaker),
@@ -304,7 +329,7 @@ func TestVerifyOTPMiddleware(t *testing.T) {
 
 			recorder := httptest.NewRecorder()
 
-			verifyPath := "/verify_otp"
+			verifyPath := "/middleware/test/verify_otp"
 			server.router.POST(
 				verifyPath,
 				authMiddleware(server.tokenMaker),

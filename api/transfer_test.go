@@ -10,6 +10,7 @@ import (
 
 	"database/sql"
 
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 
@@ -39,7 +40,7 @@ func TestCreateTransfer(t *testing.T) {
 	testCases := []struct {
 		name          string
 		body          transferRequest
-		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
+		setupAuth     func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker)
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(t *testing.T, recoder *httptest.ResponseRecorder)
 	}{
@@ -52,8 +53,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				// transfers api endpoints
@@ -87,8 +90,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user2.Username, user2.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user2.Username, user2.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account1.ID)).Times(1).Return(account1, nil)
@@ -108,7 +113,9 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
@@ -127,8 +134,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account1.ID)).Times(1).Return(account1, nil)
@@ -161,8 +170,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
@@ -183,8 +194,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.EUR,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account1.ID)).Times(1).Return(account1, nil)
@@ -204,8 +217,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      "ABC",
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
@@ -224,8 +239,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account1.ID)).Times(1).Return(db.Account{}, sql.ErrNoRows)
@@ -245,8 +262,10 @@ func TestCreateTransfer(t *testing.T) {
 				Currency:      util.USD,
 				OTP:           testOTP,
 			},
-			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				addAuthorization(t, request, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
+				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account1.ID)).Times(1).Return(db.Account{}, sql.ErrConnDone)
@@ -275,19 +294,20 @@ func TestCreateTransfer(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			onlyTransferURL := "/only_transfers"
+			onlyTransferURL := "/api/test/transfers"
 			server.router.POST(
 				onlyTransferURL,
+				csrfVerifyMiddleware(),
+				csrfTokenMiddleware(),
 				authMiddleware(server.tokenMaker),
 				server.createTransfer,
 			)
 			request, err := http.NewRequest(http.MethodPost, onlyTransferURL, bytes.NewReader(data))
 			require.NoError(t, err)
 
-			tc.setupAuth(t, request, server.tokenMaker)
+			tc.setupAuth(t, request, server.router, server.tokenMaker)
 			server.router.ServeHTTP(recorder, request)
 			tc.checkResponse(t, recorder)
 		})
 	}
-
 }

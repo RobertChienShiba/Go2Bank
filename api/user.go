@@ -63,7 +63,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 	if err != nil {
 		errCode := db.ErrorCode(err)
 		if errCode == db.UniqueViolation {
-			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			ctx.JSON(http.StatusConflict, errorResponse(err))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -135,11 +135,11 @@ type loginUserRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 }
 
-type loginUserResponse struct {
-	AccessToken          string       `json:"access_token"`
-	AccessTokenExpiresAt time.Time    `json:"access_token_expires_at"`
-	User                 userResponse `json:"user"`
-}
+// type loginUserResponse struct {
+// AccessToken          string       `json:"access_token"`
+// AccessTokenExpiresAt time.Time    `json:"access_token_expires_at"`
+// User userResponse `json:"user"`
+// }
 
 func (server *Server) loginUser(ctx *gin.Context) {
 	var req loginUserRequest
@@ -166,7 +166,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(req.Username, user.Role, server.config.AccessTokenDuration)
+	accessToken, _, err := server.tokenMaker.CreateToken(req.Username, user.Role, server.config.AccessTokenDuration)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -175,7 +175,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	sID := util.RandomID()
 	ctx.SetSameSite(http.SameSiteLaxMode)
-	ctx.SetCookie("sid", sID, 3600*24, "/", "", false, true)
+	ctx.SetCookie("sid", sID, int(server.config.RefreshTokenDuration.Seconds()), "/", "", false, true)
 
 	err1 := server.kvStore.Set("sid:"+sID, user.Username, server.config.RefreshTokenDuration)
 	err2 := server.kvStore.Set("sid:"+sID+":user_agent", ctx.Request.UserAgent(), server.config.RefreshTokenDuration)
@@ -187,13 +187,15 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	rsp := loginUserResponse{
-		AccessToken:          accessToken,
-		AccessTokenExpiresAt: accessPayload.ExpiredAt,
-		User:                 newUserResponse(user),
-	}
+	// rsp := loginUserResponse{
+	// 	AccessToken:          accessToken,
+	// 	AccessTokenExpiresAt: accessPayload.ExpiredAt,
+	// 	User: newUserResponse(user),
+	// }
 
-	ctx.JSON(http.StatusOK, rsp)
+	ctx.SetCookie("access_token", accessToken, int(server.config.AccessTokenDuration.Seconds()), "/", "", false, true)
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "login successfully"})
 }
 
 func (server *Server) logoutUser(ctx *gin.Context) {
@@ -213,7 +215,9 @@ func (server *Server) logoutUser(ctx *gin.Context) {
 	}
 
 	ctx.SetCookie("sid", "", -1, "/", "", false, true)
-	ctx.JSON(http.StatusOK, gin.H{"message": "logged out successfully"})
+	ctx.SetCookie("access_token", "", -1, "/", "", false, true)
+	ctx.SetCookie("_gorilla_csrf", "", -1, "/", "", false, true)
+	ctx.JSON(http.StatusOK, gin.H{"message": "logout successfully"})
 }
 
 type UpdateUserRequest struct {

@@ -15,6 +15,7 @@ import (
 
 func newTestServer(t *testing.T, store db.Store, sessionStore rds.Store, taskDistributor worker.TaskDistributor) *Server {
 	config := util.Config{
+		AllowedOrigins:      []string{"*"},
 		TokenSymmetricKey:   util.RandomString(32),
 		AccessTokenDuration: time.Minute,
 		APILimitBound:       int64(10),
