@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go2bank-server-deployment
+  labels:
+    server: go2bank-server
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      server: go2bank-server
+  template:
+    metadata:
+      labels:
+        server: go2bank-server
+    spec:
+      initContainers:
+      - name: postgres-check
+        image: postgres:alpine
+        command: 
+          - "sh"
+          - "-c"
+          - |
+            until pg_isready -h postgres.default.svc.cluster.local -p 5432; do
+              echo "Waiting for PostgreSQL to start...";
+              sleep 2;
+            done
+            echo "Postgres is up and running!"
+      - name: redis-check
+        image: redis:alpine
+        command: 
+          - "sh"
+          - "-c"
+          - |
+            until redis-cli -h redis.default.svc.cluster.local -p 6379 ping | grep -q PONG; do
+              echo "Waiting for Redis to start...";
+              sleep 3;
+            done
+            echo "Redis is up and running!"
+      containers:
+      - name: go2bank-server
+        image: 888577033729.dkr.ecr.ap-northeast-3.amazonaws.com/go2bank
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http-server
+        command: 
+          - "/app/main"
+        resources:
+          requests:
+            cpu: 100m
+        env:
+          - name: DB_SOURCE
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: DB_SOURCE
+          - name: HTTP_SERVER_ADDRESS
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: HTTP_SERVER_ADDRESS
+          - name: ALLOWED_ORIGINS
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: ALLOWED_ORIGINS
+          - name: TOKEN_SYMMETRIC_KEY
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: TOKEN_SYMMETRIC_KEY
+          - name: ACCESS_TOKEN_DURATION
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: ACCESS_TOKEN_DURATION
+          - name: REFRESH_TOKEN_DURATION
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: REFRESH_TOKEN_DURATION
+          - name: MIGRATION_URL
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: MIGRATION_URL
+          - name: API_LIMIT_BOUND
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: API_LIMIT_BOUND
+          - name: API_LIMIT_DURATION
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: API_LIMIT_DURATION
+          - name: EMAIL_SENDER_NAME
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: EMAIL_SENDER_NAME
+          - name: EMAIL_SENDER_ADDRESS
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: EMAIL_SENDER_ADDRESS
+          - name: EMAIL_SENDER_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: EMAIL_SENDER_PASSWORD
+          - name: GOOGLE_OAUTH_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: GOOGLE_OAUTH_CLIENT_ID
+          - name: GOOGLE_OAUTH_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: GOOGLE_OAUTH_CLIENT_SECRET
+          - name: GOOGLE_OAUTH_REDIRECT_URL
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: GOOGLE_OAUTH_REDIRECT_URL
+          - name: REDIS_URL
+            valueFrom:
+              secretKeyRef:
+                name: eks-secret
+                key: REDIS_URL

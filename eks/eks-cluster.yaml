@@ -1,0 +1,38 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: go2bank
+  region: ap-northeast-3
+
+managedNodeGroups:
+  - name: go2bank-ng-large
+    instanceTypes: t3.large
+    amiFamily: Ubuntu2204
+    minSize: 1
+    maxSize: 2
+    desiredCapacity: 1
+    volumeSize: 20
+    labels: {role: worker}
+    tags:
+      nodegroup-role: worker
+
+addonsConfig:
+  autoApplyPodIdentityAssociations: true
+
+addons:
+  - name: vpc-cni
+    version: latest
+    resolveConflicts: overwrite
+  - name: metrics-server
+    version: latest
+    resolveConflicts: overwrite
+  - name: external-dns
+    version: latest
+    resolveConflicts: overwrite
+  - name: pod-identity-webhook
+    version: latest
+    resolveConflicts: overwrite
+  - name: ebs-csi
+    version: latest
+    resolveConflicts: overwrite

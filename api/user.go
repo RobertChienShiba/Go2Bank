@@ -200,23 +200,21 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 func (server *Server) logoutUser(ctx *gin.Context) {
 	sID, err := ctx.Cookie("sid")
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
+	if err == nil {
+		err1 := server.kvStore.Del("sid:" + sID)
+		err2 := server.kvStore.Del("sid:" + sID + ":user_agent")
+		err3 := server.kvStore.Del("sid:" + sID + ":ip")
+		if err1 != nil || err2 != nil || err3 != nil {
+			err := errors.New("failed to delete session in redis when logging out")
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+
+		ctx.SetCookie("sid", "", -1, "/", "", false, true)
+		ctx.SetCookie("access_token", "", -1, "/", "", false, true)
+		ctx.SetCookie("_gorilla_csrf", "", -1, "/", "", false, true)
 	}
 
-	err1 := server.kvStore.Del("sid:" + sID)
-	err2 := server.kvStore.Del("sid:" + sID + ":user_agent")
-	err3 := server.kvStore.Del("sid:" + sID + ":ip")
-	if err1 != nil || err2 != nil || err3 != nil {
-		err := errors.New("failed to delete session in redis when logging out")
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.SetCookie("sid", "", -1, "/", "", false, true)
-	ctx.SetCookie("access_token", "", -1, "/", "", false, true)
-	ctx.SetCookie("_gorilla_csrf", "", -1, "/", "", false, true)
 	ctx.JSON(http.StatusOK, gin.H{"message": "logout successfully"})
 }
 

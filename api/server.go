@@ -58,7 +58,14 @@ func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistri
 			"X-CSRF-Token",
 		},
 		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
+		ExposeHeaders: []string{
+			"X-RateLimit-Limit",
+			"X-RateLimit-Remaining",
+			"X-RateLimit-Reset",
+			"X-RateLimit-Retry-After",
+			"X-CSRF-Token",
+		},
+		MaxAge: 12 * time.Hour,
 	}))
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {

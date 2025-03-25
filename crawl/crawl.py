@@ -24,10 +24,12 @@ cur = conn.cursor()
 
 # clear the data in the currencies table
 cur.execute("""
-    TRUNCATE TABLE IF EXISTS currencies
+SELECT to_regclass('public.currencies');
 """)
-conn.commit()
-
+result = cur.fetchone()
+if result[0] is not None:
+    cur.execute("TRUNCATE TABLE currencies")
+    
 # create currencies table (if not exists)
 cur.execute("""
     CREATE TABLE IF NOT EXISTS currencies (

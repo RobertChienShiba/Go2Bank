@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: crawler
+spec:
+  schedule: "0 0 * * *"  # Run every midnight
+  failedJobsHistoryLimit: 0
+  successfulJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 60
+      backoffLimit: 3
+      template:
+        metadata:
+          labels:
+            app: crawler
+        spec:
+          initContainers:
+          - name: postgres-check
+            image: postgres:alpine
+            command: 
+              - "sh"
+              - "-c"
+              - |
+                until pg_isready -h postgres.default.svc.cluster.local -p 5432; do
+                  echo "Waiting for PostgreSQL to start...";
+                  sleep 2;
+                done
+                echo "Postgres is up and running!"
+          containers:
+          - name: crawler
+            image: 888577033729.dkr.ecr.ap-northeast-3.amazonaws.com/go2bank-crawler
+            imagePullPolicy: Always
+            env:
+              - name: DB_SOURCE
+                valueFrom:
+                  secretKeyRef:
+                    name: eks-secret
+                    key: DB_SOURCE 
+            command: 
+              - "sh"
+              - "k8s-entrypoint.sh"
+          restartPolicy: OnFailure
+      

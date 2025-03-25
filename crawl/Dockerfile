@@ -7,7 +7,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY wait-for-data.sh .
-COPY start.sh .
+# COPY start.sh .
+COPY k8s-entrypoint.sh .
 COPY currency.txt .
 COPY crawl.py .
 

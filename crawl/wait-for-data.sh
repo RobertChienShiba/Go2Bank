@@ -12,8 +12,9 @@ CURRENCIES=$(awk '{printf "\047%s\047,", $0}' $FILE | sed 's/,$//')
 REQUIRED_COUNT=$(wc -l < $FILE | tr -d '[:space:]')
 
 echo "Checking Currencies: ($CURRENCIES), Required count: $REQUIRED_COUNT" 
+RETRY=0
 
-while true; do
+while [ $RETRY -le 5 ]; do
     # execute the postgres sqlquery
     QUERY_COUNT=$(psql $DB_SOURCE -t -c "SELECT COUNT(DISTINCT currency) FROM currencies WHERE currency IN ($CURRENCIES);" | tr -d '[:space:]')
 
@@ -24,8 +25,9 @@ while true; do
     fi
 
     echo "⏳ Waiting for required categories... ($QUERY_COUNT/$REQUIRED_COUNT)"
-    exit 1
+    ((RETRY++))
 done
+exit 1
 
 # start next command
 # exec "$@"

@@ -9,7 +9,7 @@
 > [!NOTE] 
 > Following API Endpoints will be passed through Paseto  and CSRF Authentication Middleware
 - **GET** `/api/auth/users/me` : Get a user information
-- **POST** `/api/auth/accounts` : create a new account by a user
+- **POST** `/api/auth/accounts` : Create a new account by a user
 - **GET** `/api/auth/accounts/:id` : Get a account information
 - **GET** `/api/auth/accounts` : List all accounts
 
@@ -20,7 +20,7 @@
 >[!NOTE]
 > Add Rate Limiting and OTP Verified Middleware, This layer is applied in addition to above middleware protections.
 - **GET** `/api/auth/transfers/sendOTP`: Enqueue OTP verification task into message queue
-- **POST** `/api/auth/transfers` : create a new transfer between two accounts
+- **POST** `/api/auth/transfers` : Create a new transfer between two accounts
 
 ## DB Diagram
 ![db](https://github.com/RobertChienShiba/Go2Bank/blob/main/DB.png)
@@ -69,4 +69,3 @@
 - [go-querystring](https://github.com/google/go-querystring)
 - [CSRF Protection](https://studygolang.com/articles/35927?fr=sidebar)
 - [Google OAuth2](https://codevoweb.com/how-to-implement-google-oauth2-in-golang/)
-

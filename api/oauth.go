@@ -214,7 +214,7 @@ func GetGoogleUser(access_token string, id_token string) (*GoogleUserResult, err
 }
 
 func (server *Server) testGoogleOAuth(ctx *gin.Context) {
-	from := ctx.DefaultQuery("from", "/")
+	from := ctx.DefaultQuery("from", "/api/users/logout")
 	rootUrl := "https://accounts.google.com/o/oauth2/v2/auth"
 
 	options := struct {

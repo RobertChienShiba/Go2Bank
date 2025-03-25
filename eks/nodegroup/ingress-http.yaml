@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: go2bank-ingress-http
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /api/$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    # cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: k8s-ingressn-ingressn-3425d00bb8-c9369552aa626306.elb.ap-northeast-3.amazonaws.com
+    http:
+      paths:
+      - pathType: ImplementationSpecific
+        path: /api/v1/(.*)
+        backend:
+          service:
+            name: go2bank-server-service
+            port:
+              number: 80
