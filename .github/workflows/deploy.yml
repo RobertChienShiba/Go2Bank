@@ -21,10 +21,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ap-northeast-3
-          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: github-actions-${{ github.run_id }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       # - name: Login to Amazon ECR
       #   id: login-ecr
@@ -55,22 +53,12 @@ jobs:
           curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xzv 
           sudo mv eksctl /usr/local/bin
 
-      # - name: Create EKS Cluster
-      #   run: |
-      #     eksctl create cluster -f eks/eks-cluster.yaml
+      - name: Create EKS Cluster
+        run: |
+          eksctl create cluster -f eks/eks-cluster.yaml --cfn-disable-rollback
 
       - name: Update kube config
         run: aws eks update-kubeconfig --name go2bank --region ap-northeast-3
-
-      - name: Create IAM role mapping
-        run: |
-          eksctl create iamidentitymapping \
-          --cluster go2bank \
-          --region ap-northeast-3 \
-          --arn ${{ secrets.AWS_ROLE_ARN}} \
-          --group system:masters \
-          --no-duplicate-arns \
-          --username github-action
 
       - name: Install External Secrets Operator
         run: |
@@ -82,19 +70,20 @@ jobs:
             echo "external-secrets is already installed, skipping installation."
           fi
 
-      # - name: Create EKS OIDC and IRSA
-      #   run: |
-      #     eksctl utils associate-iam-oidc-provider --cluster=go2bank --approve --region ap-northeast-3
-      #     eksctl create iamserviceaccount \
-      #       --name external-secrets-irsa  \
-      #       --namespace default \
-      #       --cluster go2bank \
-      #       --region ap-northeast-3 \
-      #       --attach-role-arn ${{ secrets.IRSA_POLICY_ARN }} \
-      #       --approve \
-      #       --override-existing-serviceaccounts
+      - name: Create EKS OIDC and IRSA
+        run: |
+          eksctl utils associate-iam-oidc-provider --cluster=go2bank --approve --region ap-northeast-3
+          eksctl create iamserviceaccount \
+            --name eks-external-secrets-irsa  \
+            --namespace default \
+            --cluster go2bank \
+            --region ap-northeast-3 \
+            --role-name eks-external-secrets-irsa-role \
+            --attach-policy-arn ${{ secrets.IRSA_POLICY_ARN }} \
+            --approve \
+            --override-existing-serviceaccounts
           
-      # - name: Deploy to Amazon EKS
-      #   run: |
-      #     chmod +x eks/nodegroup/deploy.sh
-      #     eks/nodegroup/deploy.sh
+      - name: Deploy to Amazon EKS
+        run: |
+          chmod +x eks/nodegroup/deploy.sh
+          eks/nodegroup/deploy.sh
