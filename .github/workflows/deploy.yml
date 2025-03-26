@@ -21,8 +21,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: ap-northeast-3
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: GithubActionsDeploy
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -50,8 +50,8 @@ jobs:
 
       - name: Install eksctl
         run: |
-          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xzf -C /tmp
-          sudo mv /tmp/eksctl /usr/local/bin
+          curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xzv 
+          sudo mv eksctl /usr/local/bin
 
       # - name: Create EKS Cluster
       #   run: |
@@ -63,10 +63,12 @@ jobs:
       - name: Install External Secrets Operator
         run: |
           helm repo add external-secrets https://charts.external-secrets.io
-          helm install external-secrets \
-            external-secrets/external-secrets \
-             -n external-secrets \
-             --create-namespace \
+          if ! helm list -n external-secrets | grep -q external-secrets; then
+            echo "Installing external-secrets..."
+            helm install external-secrets external-secrets/external-secrets -n external-secrets --create-namespace
+          else
+            echo "external-secrets is already installed, skipping installation."
+          fi
 
       - name: Create EKS OIDC and IRSA
         run: |
@@ -75,13 +77,12 @@ jobs:
             --name external-secrets-irsa  \
             --namespace default \
             --cluster go2bank \
-            --region ap-northeast-3
-            --role-name "external-secrets-irsa-role" \
-            --attach-policy-arn ${{ secrets.IRSA_POLICY_ARN }}\
+            --region ap-northeast-3 \
+            --attach-role-arn ${{ secrets.IRSA_POLICY_ARN }} \
             --approve \
             --override-existing-serviceaccounts
           
-      - name: Deploy image to Amazon EKS
+      - name: Deploy to Amazon EKS
         run: |
           chmod +x eks/nodegroup/deploy.sh
           eks/nodegroup/deploy.sh
