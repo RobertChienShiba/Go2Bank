@@ -71,8 +71,8 @@ func TestGetAccountAPI(t *testing.T) {
 			name:      "NoAuthorization",
 			accountID: account.ID,
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
-				addCSRFToken(t, csrfReq, request, router)
+				// csrfReq, _ := http.NewRequest(http.MethodGet,url, nil)
+				// addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
 				store.EXPECT().
@@ -168,6 +168,7 @@ func TestCreateAccountAPI(t *testing.T) {
 
 	user, _ := randomUser(t)
 	account := randomAccount(user.Username)
+	url := "/api/auth/accounts"
 
 	testCases := []struct {
 		name          string
@@ -182,7 +183,7 @@ func TestCreateAccountAPI(t *testing.T) {
 				Currency: account.Currency,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -208,7 +209,7 @@ func TestCreateAccountAPI(t *testing.T) {
 				Currency: account.Currency,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore, session *mocksession.MockStore) {
@@ -226,7 +227,7 @@ func TestCreateAccountAPI(t *testing.T) {
 				Currency: account.Currency,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -251,7 +252,7 @@ func TestCreateAccountAPI(t *testing.T) {
 				Currency: "XYZ",
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -270,7 +271,7 @@ func TestCreateAccountAPI(t *testing.T) {
 				Currency: account.Currency,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -310,7 +311,6 @@ func TestCreateAccountAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/accounts"
 			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
 			require.NoError(t, err)
 
@@ -469,7 +469,7 @@ func TestListAccountAPI(t *testing.T) {
 			server := newTestServer(t, store, session, worker)
 			recorder := httptest.NewRecorder()
 
-			url := "/api/auth/accounts"
+			url := "/api/auth/accounts/all"
 			request, err := http.NewRequest(http.MethodGet, url, nil)
 			require.NoError(t, err)
 

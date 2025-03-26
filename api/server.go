@@ -84,22 +84,28 @@ func NewServer(config util.Config, store db.Store, kvStore rds.Store, taskDistri
 		authMiddleware(tokenMaker),
 	)
 
-	authRoutes.GET("/csrf_token", func(ctx *gin.Context) {
+	authRoutes.GET("/users/update", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{"message": "fetch csrf token successfully"})
 	})
-
 	authRoutes.PATCH("/users/update", server.updateUser)
+
 	authRoutes.GET("/users/me", server.getUser)
 
+	authRoutes.GET("/accounts", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"message": "fetch csrf token successfully"})
+	})
 	authRoutes.POST("/accounts", server.createAccount)
 	authRoutes.GET("/accounts/:id", server.getAccount)
-	authRoutes.GET("/accounts", server.listAccounts)
+	authRoutes.GET("/accounts/all", server.listAccounts)
 
 	authRoutes.GET("/transfers/sendOTP",
 		rateLimitMiddleware("sendOTP", kvStore, config.APILimitBound, config.APILimitDuration),
 		server.sendOTP,
 	)
 
+	authRoutes.GET("/transfers", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"message": "fetch csrf token successfully"})
+	})
 	authRoutes.POST("/transfers",
 		rateLimitMiddleware("verifyOTP", kvStore, config.APILimitBound, config.APILimitDuration),
 		verifyOTPMiddleware(kvStore, config.APILimitDuration),

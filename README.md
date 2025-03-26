@@ -11,7 +11,7 @@
 - **GET** `/api/auth/users/me` : Get a user information
 - **POST** `/api/auth/accounts` : Create a new account by a user
 - **GET** `/api/auth/accounts/:id` : Get a account information
-- **GET** `/api/auth/accounts` : List all accounts
+- **GET** `/api/auth/accounts/all` : List all accounts
 
 > [!NOTE]
 >  Add RBAC Authorization, This layer is applied in addition to above middleware protections.
@@ -42,6 +42,7 @@
 - Google OAuth2 
 - CSRF Protection 
 - CORS
+- AWS EKS、ECR、Secret Manager
 
 ## TODO
 - [x] Secure `Transfers` endpoints with time-based OTP
@@ -50,6 +51,7 @@
 - [x] Store Refresh Tokens in **HttpOnly cookies** and **Redis** for better user experience and instant revocation
 - [x] Implemented CSRF protection and CORS policies 
 - [x] Google OAuth2 Integration
+- [x] Deploy to AWS EKS
 - [ ] Improve Testing coverage (up to at least 80%)
 - [ ] Intergate with gRPC API
 - [ ] Use SQS as the message queue for OTP requests
@@ -69,3 +71,4 @@
 - [go-querystring](https://github.com/google/go-querystring)
 - [CSRF Protection](https://studygolang.com/articles/35927?fr=sidebar)
 - [Google OAuth2](https://codevoweb.com/how-to-implement-google-oauth2-in-golang/)
+- [fixed internet-facing elb](https://github.com/kubernetes-sigs/aws-load-balancer-controller/issues/3212)

@@ -486,6 +486,8 @@ func TestUpdateUserAPI(t *testing.T) {
 	newName := util.RandomOwner()
 	newEmail := util.RandomEmail()
 
+	url := "/api/auth/users/update"
+
 	testCases := []struct {
 		name          string
 		body          UpdateUserRequest
@@ -525,7 +527,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Return(updatedUser, nil)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -565,7 +567,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Return(updatedUser, nil)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, banker.Username, banker.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -586,7 +588,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(0)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, other.Username, other.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -607,7 +609,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(0)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, other.Username, "invalid_role", time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -628,7 +630,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(0)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user.Username, user.Role, -time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -649,7 +651,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Times(0)
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, url, nil)
 				addCSRFToken(t, csrfReq, request, router)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
@@ -683,7 +685,6 @@ func TestUpdateUserAPI(t *testing.T) {
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
-			url := "/api/auth/users/update"
 			request, err := http.NewRequest(http.MethodPatch, url, bytes.NewReader(data))
 			require.NoError(t, err)
 

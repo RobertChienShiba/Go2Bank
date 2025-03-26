@@ -54,7 +54,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -91,7 +91,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user2.Username, user2.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -114,7 +114,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addCSRFToken(t, csrfReq, request, router)
 			},
 			buildStubs: func(store *mockdb.MockStore) {
@@ -135,7 +135,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -171,7 +171,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -195,7 +195,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -218,7 +218,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -240,7 +240,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
@@ -263,7 +263,7 @@ func TestCreateTransfer(t *testing.T) {
 				OTP:           testOTP,
 			},
 			setupAuth: func(t *testing.T, request *http.Request, router *gin.Engine, tokenMaker token.Maker) {
-				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/csrf_token", nil)
+				csrfReq, _ := http.NewRequest(http.MethodGet, "/api/auth/transfers", nil)
 				addAuthorization(t, csrfReq, tokenMaker, authorizationTypeBearer, user1.Username, user1.Role, time.Minute)
 				addCSRFToken(t, csrfReq, request, router)
 			},
