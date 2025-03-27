@@ -1,8 +1,8 @@
 name: Deploy to production
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [test]
 
 permissions:
   id-token: write   # This is required for requesting the JWT
@@ -53,9 +53,9 @@ jobs:
           curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xzv 
           sudo mv eksctl /usr/local/bin
 
-      # - name: Create EKS Cluster
-      #   run: |
-      #     eksctl create cluster -f eks/eks-cluster.yaml
+      - name: Create EKS Cluster
+        run: |
+          eksctl create cluster -f eks/eks-cluster.yaml --cfn-disable-rollback
 
       - name: Update kube config
         run: aws eks update-kubeconfig --name go2bank --region ap-northeast-3
@@ -74,11 +74,12 @@ jobs:
         run: |
           eksctl utils associate-iam-oidc-provider --cluster=go2bank --approve --region ap-northeast-3
           eksctl create iamserviceaccount \
-            --name external-secrets-irsa  \
+            --name eks-external-secrets-irsa  \
             --namespace default \
             --cluster go2bank \
             --region ap-northeast-3 \
-            --attach-role-arn ${{ secrets.IRSA_POLICY_ARN }} \
+            --role-name eks-external-secrets-irsa-role \
+            --attach-policy-arn ${{ secrets.IRSA_POLICY_ARN }} \
             --approve \
             --override-existing-serviceaccounts
           
